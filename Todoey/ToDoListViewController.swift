@@ -10,12 +10,18 @@ import UIKit
 
 class ToDoListViewController: UITableViewController {
     
-     let itemarray = [ "SCIENCE" ,"MATHS" ,"ENGLISH", "HINDI", "SOCIAL SCIENCE" ]
+    var itemarray = [ "SCIENCE" ,"MATHS" ,"ENGLISH", "HINDI", "SOCIAL SCIENCE" ]
+    
+    let defaults = UserDefaults.standard
 
-    override func viewDidLoad() {
+   override func viewDidLoad() {
         super.viewDidLoad()
-        
-        
+    
+    if let items = defaults.array(forKey: "todolistarray") as? [String] {
+        itemarray = items
+    }
+    
+    
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -39,10 +45,43 @@ class ToDoListViewController: UITableViewController {
       tableView.cellForRow(at: indexPath)?.accessoryType = .none
         }
         
-       else {
+        else {
         tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
         }
         tableView.deselectRow(at: indexPath, animated: true)
+    }
+    
+   
+    @IBAction func AddButton(_ sender: Any) {
+        
+        var textfield = UITextField()
+        
+        let alert = UIAlertController(title: "Add new todoey item", message: "", preferredStyle: .alert)
+
+        let action = UIAlertAction(title: "Add item", style: .default) { (action) in
+
+            // what will happen when user clicks on add item button on our alert
+            
+            // item is added in table view but do not show in tableview
+            self.itemarray.append(textfield.text!)
+            
+            
+            self.defaults.set(self.itemarray, forKey: "todolistarray")
+            
+            // item will show only when we reload the data
+            self.tableView.reloadData()
+        }
+        
+        alert.addTextField { (alerttextfield) in
+            alerttextfield.placeholder = "add item"
+            textfield = alerttextfield
+            
+            
+        }
+        
+        alert.addAction(action)
+
+        present(alert, animated: true, completion: nil)
     }
     
     
