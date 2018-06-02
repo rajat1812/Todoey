@@ -7,8 +7,10 @@
 //
 
 import Foundation
-class item {
+
+class item : Encodable , Decodable {     // we can use Codable INTERAD OF Encodable & Decodable
     
     var title : String = ""
-    var done : Bool = true
+    var done : Bool = false                               
 }
+// Encodable : it means that item type is now able to encode itself into a plist or into a json & for that all properties of class must be in standard form
