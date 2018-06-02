@@ -7,46 +7,27 @@
 //
 
 import UIKit
+import CoreData
 
 
 
-class ToDoListViewController: UITableViewController  {
+class ToDoListViewController: UITableViewController   {
     
-    var itemarray = [item]()   // array of custom item object
- 
-   
-    // create a file path to the document's folder &
-    let DataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("items.plist")
+    var itemarray = [Item]()   // array of custom item object
 
-  
+  //  goes to appdelegate & grabs the persistent container & then grab a reference(viewcontext) to the context for that persistent container
     
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
     
     
     override func viewDidLoad() {
         super.viewDidLoad()
 
-   
-    
-    print(DataFilePath!)
-    
-    let newitem1 = item()
-    newitem1.title = "ENGLISH"
-    newitem1.done = false
-    itemarray.append(newitem1)
-    
-    let newitem2 = item()
-    newitem2.title = "SCIENCE"
-    newitem2.done = false
-    itemarray.append(newitem2)
-    
-    let newitem3 = item()
-    newitem3.title = "MATHS"
-    newitem3.done = false
-    itemarray.append(newitem3)
-    
-    
-    loaditems()
+      // create a path for storing data
+      print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
+
+      loaditems()
     
     }
 
@@ -68,13 +49,7 @@ class ToDoListViewController: UITableViewController  {
         
         
         cell.accessoryType = itemarray[indexPath.row].done ? .checkmark :.none
-        
-//        if itemarray[indexPath.row].done == false{
-//            cell.accessoryType = .none
-//        }
-//        else{
-//            cell.accessoryType  = .checkmark
-//        }
+
         
         return cell
     }
@@ -85,14 +60,16 @@ class ToDoListViewController: UITableViewController  {
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-        if itemarray[indexPath.row].done == false {
-            
-            itemarray[indexPath.row].done = true
-        }
-        else {
-            
-            itemarray[indexPath.row].done = false
-        }
+//        if itemarray[indexPath.row].done == false {
+//
+//            itemarray[indexPath.row].done = true
+//        }
+//        else {
+//
+//            itemarray[indexPath.row].done = false
+//        }
+        context.delete(itemarray[indexPath.row])
+        itemarray.remove(at: indexPath.row)
         
          saveitems()
     
@@ -113,9 +90,9 @@ class ToDoListViewController: UITableViewController  {
         let action = UIAlertAction(title: "Add item", style: .default) { (action) in
 
             
-            let newitem1 = item()
+            let newitem1 = Item(context: self.context)
             newitem1.title = textfield.text!
-            
+            newitem1.done = false
             self.itemarray.append(newitem1)
             
             self.saveitems()
@@ -135,36 +112,67 @@ class ToDoListViewController: UITableViewController  {
     
     
     
-    
-    
-    // convert array of items into plist
-    
-    func saveitems() {
-        
-        let encoder = PropertyListEncoder()
+     func saveitems() {
         
         do{
-            let data = try? encoder.encode(itemarray)
-            try data?.write(to: DataFilePath!)
+            try context.save()
         }  catch {
             print("error encoding item array . \(error)")
         }
         
-         tableView.reloadData()
+         self.tableView.reloadData()
     }
     
     
-    // convert plist into array of item
-    
+
     func loaditems () {
-       if  let data = try? Data(contentsOf: DataFilePath!) {
+
+        let request : NSFetchRequest<Item> = Item.fetchRequest()
+
         do{
-            let decoder = PropertyListDecoder()
-            itemarray = try decoder.decode([item].self, from: data)
-        } catch  {
+            // application has to speak with context before we can do anything
+            itemarray =  try context.fetch(request)
+        } catch {
             print("\(error)")
         }
-        }
+        self.tableView.reloadData()
+      
     }
+    
+
 }
 
+
+extension ToDoListViewController : UISearchBarDelegate , UISearchDisplayDelegate {
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        let request : NSFetchRequest<Item> = Item.fetchRequest()
+        
+        // show the options related to the letter or word searched
+        
+        // [cd] - it shows that there is no case sensitivity in searching through a word or letter ( using uppercase or lowercase in searching)
+        let predicate = NSPredicate(format: "title contains[cd] %@", searchBar.text!)
+        request.predicate = predicate
+        
+        let sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+        request.sortDescriptors = sortDescriptors
+        
+        do{
+            // application has to speak with context before we can do anything
+            itemarray =  try context.fetch(request)
+        } catch {
+            print("\(error)")
+        }
+        
+        tableView.reloadData()
+        
+        
+     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String)
+        {
+            if searchBar.text?.count == 0 {
+                loaditems()
+            }
+    }
+    
+    }
+}
